@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pixel Canvas</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+
+<body>
+    <div class="app-container">
+        <div class="header">
+            <div class="header-left">
+                <h1>Pixel Canvas<small class="beta-badge">BETA</small></h1>
+                <div class="connection-status">
+                    <div class="status-indicator connected"></div>
+                    <span id="users-count">0 online</span>
+                </div>
+            </div>
+            <div class="header-right">
+                <div class="stats">
+                    <div class="stat-item" id="zoom-level">
+                        <i class="fas fa-search"></i>
+                        <span>100%</span>
+                    </div>
+                    <div class="stat-item" id="coordinates">
+                        <i class="fas fa-crosshairs"></i>
+                        <span>0, 0</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="main-content">
+            <div class="toolbar">
+                <div class="tool-section">
+                    <button id="eraser-btn" class="tool-btn">
+                        <i class="fas fa-eraser"></i>
+                        <span>Eraser</span>
+                    </button>
+                    <button id="color-picker-btn" class="tool-btn">
+                        <i class="fas fa-eye-dropper"></i>
+                        <span>Pick Color</span>
+                    </button>
+                    <div class="selected-color-display">
+                        <div class="color-label">Selected:</div>
+                        <div id="selected-color" style="background-color: #000000;"></div>
+                    </div>
+                    <button id="color-wheel-btn" class="tool-btn">
+                        <i class="fas fa-palette"></i>
+                        <span>Color Picker</span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="canvas-container" id="canvas-container">
+                <canvas id="pixel-canvas"></canvas>
+                <div class="canvas-overlay" id="canvas-overlay"></div>
+            </div>
+        </div>
+
+        <div class="footer">
+            <div class="instructions">
+                <div class="instruction-item">
+                    <i class="fas fa-mouse-pointer"></i>
+                    <span>Click to place pixels</span>
+                </div>
+                <div class="instruction-item">
+                    <i class="fas fa-hand-paper"></i>
+                    <span>Drag to pan</span>
+                </div>
+                <div class="instruction-item">
+                    <i class="fas fa-search"></i>
+                    <span>Scroll to zoom</span>
+                </div>
+                <div class="instruction-item mobile-only">
+                    <i class="fas fa-mobile-alt"></i>
+                    <span>Touch & pinch on mobile</span>
+                </div>
+            </div>
+            <div class="footer-right">
+                                <button class="footer-btn" id="leaderboard-btn">
+                    <i class="fas fa-trophy"></i>
+                    <span>Leaderboard</span>
+                </button>
+                <button class="footer-btn" id="help-btn">
+                    <i class="fas fa-question-circle"></i>
+                    <span>Help</span>
+                </button>
+                <button class="footer-btn" id="share-btn">
+                    <i class="fas fa-share-alt"></i>
+                    <span>Share</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Name Modal -->
+    <div id="name-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Welcome to Pixel Canvas!</h2>
+                <p>Collaborate with others in real-time to create pixel art</p>
+            </div>
+            <div class="modal-body">
+                <div class="input-group">
+                    <label for="username-input">Choose your name:</label>
+                    <input type="text" id="username-input" placeholder="Artist name" maxlength="20">
+                    <div class="input-hint">Max 20 characters</div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="submit-name" class="primary-btn">
+                    <span>Start Creating</span>
+                    <i class="fas fa-arrow-right"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Leaderboard Modal -->
+    <div id="leaderboard-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Leaderboard</h2>
+            </div>
+            <div class="modal-body">
+                <table id="leaderboard-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Pixels Placed</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Leaderboard rows will be dynamically added here -->
+                    </tbody>
+                </table>
+            </div>
+            <div class="modal-footer">
+                <button id="close-leaderboard" class="primary-btn">Close</button>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- Color Picker Modal -->
+    <div id="color-picker-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Color Picker</h2>
+            </div>
+            <div class="modal-body">
+                <input type="color" id="color-wheel" value="#000000">
+                <div class="color-input-group">
+                    <input type="text" id="color-hex-input" placeholder="#RRGGBB">
+                    <div class="color-picker-actions">
+                        <button id="confirm-color-btn" class="primary-btn">OK</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pixel Info Tooltip -->
+    <div id="pixel-info" class="pixel-info">
+        <div class="pixel-color" id="pixel-info-color"></div>
+        <div class="pixel-details">
+            <div class="pixel-coords" id="pixel-info-coords"></div>
+            <div class="pixel-author" id="pixel-info-author"></div>
+            <div class="pixel-time" id="pixel-info-time"></div>
+        </div>
+    </div>
+
+    <!-- Chat Widget -->
+<div class="chat-widget">
+    <div class="chat-toggle">
+        <i class="fas fa-comment-dots"></i>
+    </div>
+    <div class="chat-container">
+        <iframe src="https://www5.cbox.ws/box/?boxid=957506&boxtag=QUG5u9" 
+                allowtransparency="yes" allow="autoplay" 
+                frameborder="0" scrolling="auto"></iframe>
+        <div class="chat-close">
+            <i class="fas fa-times"></i>
+        </div>
+    </div>
+</div>
+
+    <script src="script.js"></script>
+</body>
+
+</html>
