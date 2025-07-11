@@ -1,0 +1,3 @@
+- setup postgres db
+- npm run start:dev 
+- cd frontend; python3 -m http.server
