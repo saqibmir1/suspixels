@@ -1,9 +1,9 @@
-import { ApiProperty } from "@nestjs/swagger";
+import { ApiProperty } from '@nestjs/swagger';
 
 export class DeletePixelDto {
-    @ApiProperty({ description: 'X coordinate of the pixel to delete' })
-    x: number;
-    
-    @ApiProperty({ description: 'Y coordinate of the pixel to delete' })
-    y: number;
+  @ApiProperty({ description: 'X coordinate of the pixel to delete' })
+  x: number;
+
+  @ApiProperty({ description: 'Y coordinate of the pixel to delete' })
+  y: number;
 }

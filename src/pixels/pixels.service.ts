@@ -26,7 +26,7 @@ export class PixelsService {
 
   async setPixel(createPixelDto: CreatePixelDto): Promise<PixelResponseDto> {
     const { x, y, color, insertedBy } = createPixelDto;
-    
+
     const result = await this.pixelRepository
       .createQueryBuilder()
       .insert()
@@ -37,17 +37,21 @@ export class PixelsService {
       .execute();
 
     const pixel = result.raw[0];
-    this.logger.log(`Pixel set at (${x}, ${y}) by ${insertedBy} with color ${color}`);
-    
+    this.logger.log(
+      `Pixel set at (${x}, ${y}) by ${insertedBy} with color ${color}`,
+    );
+
     const responseDto = this.toResponseDto(pixel);
-    
+
     // Broadcast pixel update to all connected clients
     this.websocketGateway.broadcastPixelUpdate(responseDto);
-    
+
     return responseDto;
   }
 
-  async deletePixel(deletePixelDto: DeletePixelDto): Promise<{ x: number; y: number }> {
+  async deletePixel(
+    deletePixelDto: DeletePixelDto,
+  ): Promise<{ x: number; y: number }> {
     const { x, y } = deletePixelDto;
     const result = await this.pixelRepository
       .createQueryBuilder()
@@ -63,24 +67,23 @@ export class PixelsService {
     this.logger.log(`Pixel deleted at (${x}, ${y})`);
 
     const deletedPixel = result.raw[0];
-    
+
     // Broadcast pixel deletion to all connected clients
     this.websocketGateway.broadcastPixelDelete(x, y);
 
     return deletedPixel;
   }
 
-
-async getLeaderboard(): Promise<{ name: string; pixelCount: number }[]> {
-  return this.pixelRepository
-    .createQueryBuilder('pixel')
-    .select('pixel.inserted_by', 'name')  
-    .addSelect('COUNT(*)', 'pixelCount')
-    .groupBy('pixel.inserted_by')       
-    .orderBy('COUNT(*)', 'DESC')
-    .limit(10)
-    .getRawMany();
-}
+  async getLeaderboard(): Promise<{ name: string; pixelCount: number }[]> {
+    return this.pixelRepository
+      .createQueryBuilder('pixel')
+      .select('pixel.inserted_by', 'name')
+      .addSelect('COUNT(*)', 'pixelCount')
+      .groupBy('pixel.inserted_by')
+      .orderBy('COUNT(*)', 'DESC')
+      .limit(10)
+      .getRawMany();
+  }
 
   private toResponseDto(pixel: Pixel): PixelResponseDto {
     return {
