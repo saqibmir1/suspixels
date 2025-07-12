@@ -1,2 +1,3 @@
 - setup postgres db
+- cp env.sample .env
 - npm run start:dev:full
