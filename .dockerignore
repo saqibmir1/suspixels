@@ -1,0 +1,30 @@
+# .dockerignore
+
+# Ignore Python cache and virtual environments
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+env/
+venv/
+.venv/
+
+# Ignore Git files
+.git
+.gitignore
+
+# Ignore Docker files
+Dockerfile
+docker-compose.yml
+
+# Ignore OS generated files
+.DS_Store
+Thumbs.db
+
+# Ignore node modules (if any)
+node_modules/
+
+# Ignore build artifacts
+dist/
+build/
+*.egg-info/
