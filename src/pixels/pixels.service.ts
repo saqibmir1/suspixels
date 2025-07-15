@@ -81,7 +81,7 @@ export class PixelsService {
       .addSelect('COUNT(*)', 'pixelCount')
       .groupBy('pixel.inserted_by')
       .orderBy('COUNT(*)', 'DESC')
-      .limit(10)
+      .limit(100)
       .getRawMany();
   }
 
