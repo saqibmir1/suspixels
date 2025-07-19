@@ -26,6 +26,7 @@ export class PixelsService {
   private readonly PIXEL_GRID_KEY = 'pixel_grid';
   private readonly BATCH_SIZE = 100;
   private readonly BUFFER_TTL = 300; // 5 minutes
+  
   constructor(
     @InjectRepository(Pixel)
     private readonly pixelRepository: Repository<Pixel>,
@@ -46,7 +47,6 @@ export class PixelsService {
   private async initializePixelCache() {
     const exists = await this.redisClient.exists(this.PIXEL_GRID_KEY);
     if (!exists) {
-      this.logger.log('Initializing pixel grid cache');
       const pixels = await this.pixelRepository.find();
       const pixelMap = {};
 
@@ -62,30 +62,26 @@ export class PixelsService {
 
       await this.redisClient.hset(this.PIXEL_GRID_KEY, pixelMap);
       await this.redisClient.expire(this.PIXEL_GRID_KEY, 36000); // 1 hour
-      this.logger.log(`Cached ${pixels.length} pixels`);
     }
   }
 
   async getAllPixels(): Promise<PixelResponseDto[]> {
     try {
-      // try to get cahce first
       const cachedPixels = await this.redisClient.hgetall(this.PIXEL_GRID_KEY);
       if (Object.keys(cachedPixels).length > 0) {
-        this.logger.log('Returning cached pixels');
         return Object.values(cachedPixels).map((pixel) => JSON.parse(pixel));
       }
     } catch (error) {
-      this.logger.warn('Cache miss, falling back to database ');
+      this.logger.warn('Cache miss, falling back to database', error);
     }
 
-    // fallback to database
     const pixels = await this.pixelRepository.find({
       order: { updatedAt: 'DESC' },
     });
 
-    // update cache asaynchronously
-    this.updatePixelCache(pixels).catch((err) => {
-      this.logger.error('Failed to update pixel cache', err);
+    // update cache asynchronously
+    this.updatePixelCache(pixels).catch(() => {
+      this.logger.error('Failed to update pixel cache');
     });
 
     return pixels.map(this.toResponseDto);
@@ -94,7 +90,6 @@ export class PixelsService {
   async setPixel(createPixelDto: CreatePixelDto): Promise<PixelResponseDto> {
     const { x, y, color, insertedBy } = createPixelDto;
 
-    // Create pending pixel object
     const pendingPixel: PendingPixel = {
       x,
       y,
@@ -103,7 +98,6 @@ export class PixelsService {
       timestamp: Date.now(),
     };
 
-    // Store in Redis buffer
     const bufferKey = `${this.PIXEL_BUFFER_KEY}:${x},${y}`;
     await this.redisClient.setex(
       bufferKey,
@@ -111,7 +105,6 @@ export class PixelsService {
       JSON.stringify(pendingPixel),
     );
 
-    // Update cache immediately for reads
     const pixelKey = `${x},${y}`;
     const responseDto: PixelResponseDto = {
       x,
@@ -127,11 +120,6 @@ export class PixelsService {
       JSON.stringify(responseDto),
     );
 
-    this.logger.log(
-      `Pixel buffered at (${x}, ${y}) by ${insertedBy} with color ${color}`,
-    );
-
-    // Broadcast immediately for real-time updates
     this.websocketGateway.broadcastPixelUpdate(responseDto);
 
     return responseDto;
@@ -142,15 +130,12 @@ export class PixelsService {
   ): Promise<{ x: number; y: number }> {
     const { x, y } = deletePixelDto;
 
-    // remove from buffer if exists
     const bufferKey = `${this.PIXEL_BUFFER_KEY}:${x},${y}`;
     await this.redisClient.del(bufferKey);
 
-    // remove from cache
     const pixelKey = `${x},${y}`;
     await this.redisClient.hdel(this.PIXEL_GRID_KEY, pixelKey);
 
-    // delete from database
     const result = await this.pixelRepository
       .createQueryBuilder()
       .delete()
@@ -162,30 +147,22 @@ export class PixelsService {
     if (result.affected === 0) {
       throw new Error('Pixel not found');
     }
-    this.logger.log(`Pixel deleted at (${x}, ${y})`);
 
     const deletedPixel = result.raw[0];
-
-    // Broadcast pixel deletion to all connected clients
     this.websocketGateway.broadcastPixelDelete(x, y);
 
     return deletedPixel;
   }
 
-  // scheduled task to process buffered pixels
   @Cron(CronExpression.EVERY_30_SECONDS)
   async processPendingPixels() {
     try {
       const bufferPattern = `${this.PIXEL_BUFFER_KEY}:*`;
       const keys = await this.redisClient.keys(bufferPattern);
       if (keys.length === 0) {
-        this.logger.log('No pending pixels to process');
         return;
       }
 
-      this.logger.log(`Processing ${keys.length} pending pixels`);
-
-      //group by batch
       const batches: string[][] = [];
       for (let i = 0; i < keys.length; i += this.BATCH_SIZE) {
         batches.push(keys.slice(i, i + this.BATCH_SIZE));
@@ -202,7 +179,6 @@ export class PixelsService {
   private async processBatch(keys: string[]) {
     const pixels: PendingPixel[] = [];
 
-    // Get all pixels in batch
     for (const key of keys) {
       const pixelData = await this.redisClient.get(key);
       if (pixelData) {
@@ -212,7 +188,6 @@ export class PixelsService {
 
     if (pixels.length === 0) return;
 
-    // Prepare bulk upsert
     const values = pixels.map((pixel) => ({
       x: pixel.x,
       y: pixel.y,
@@ -221,7 +196,6 @@ export class PixelsService {
     }));
 
     try {
-      // Bulk upsert to database
       await this.pixelRepository
         .createQueryBuilder()
         .insert()
@@ -230,14 +204,9 @@ export class PixelsService {
         .orUpdate(['color', 'inserted_by', 'updated_at'], ['x', 'y'])
         .execute();
 
-      // Remove processed keys from buffer
       await this.redisClient.del(keys);
-
-      this.logger.log(
-        `Successfully processed batch of ${pixels.length} pixels`,
-      );
     } catch (error) {
-      this.logger.error('Error processing batch:', error);
+      this.logger.error('Error inserting pixels into database', error);
     }
   }
 
