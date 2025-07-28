@@ -139,7 +139,7 @@ class PixelCanvas {
             tableBody.innerHTML = ''; // Clear previous data
 
             try {
-                const response = await fetch('http://localhost:3000/api/pixels/leaderboard');
+                const response = await fetch('http://localhost:3002/api/pixels/leaderboard');
                 if (!response.ok) throw new Error('Failed to fetch leaderboard');
                 const leaderboard = await response.json();
 
@@ -542,7 +542,7 @@ class PixelCanvas {
     }
 
     async sendPixelToServer(x, y, color) {
-        const response = await fetch('http://localhost:3000/api/pixels', {
+        const response = await fetch('http://localhost:3002/api/pixels', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -561,7 +561,7 @@ class PixelCanvas {
     }
 
     async deletePixelFromServer(x, y) {
-        const response = await fetch('http://localhost:3000/api/pixels', {
+        const response = await fetch('http://localhost:/3002/api/pixels', {
             method: 'DELETE',
             headers: {
                 'Content-Type': 'application/json',
@@ -676,7 +676,7 @@ class PixelCanvas {
     }
 
     connectWebSocket() {
-        const wsUrl = 'ws://localhost:3000';
+        const wsUrl = 'ws://localhost:3002';
 
         console.log('Connecting to WebSocket:', wsUrl);
         this.ws = new WebSocket(wsUrl);
@@ -691,7 +691,7 @@ class PixelCanvas {
             console.log('WebSocket disconnected');
             this.connected = false;
             this.updateConnectionStatus();
-            setTimeout(() => this.connectWebSocket(), 3000);
+            setTimeout(() => this.connectWebSocket(), 3002);
         };
 
         this.ws.onerror = (error) => {
@@ -741,7 +741,7 @@ class PixelCanvas {
 
     async loadPixels() {
         try {
-            const response = await fetch('http://localhost:3000/api/pixels');
+            const response = await fetch('http://localhost:3002/api/pixels');
             const pixels = await response.json();
 
             this.pixels.clear();

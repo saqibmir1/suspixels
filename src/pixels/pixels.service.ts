@@ -51,16 +51,18 @@ export class PixelsService {
       const pixelMap = {};
 
       pixels.forEach((pixel) => {
-        pixelMap[`${pixel.x},${pixel.y}`] = {
+        pixelMap[`${pixel.x},${pixel.y}`] = JSON.stringify({
           x: pixel.x,
           y: pixel.y,
           color: pixel.color,
           insertedBy: pixel.insertedBy,
           updatedAt: pixel.updatedAt,
-        };
+        });
       });
 
-      await this.redisClient.hset(this.PIXEL_GRID_KEY, pixelMap);
+      if (Object.keys(pixelMap).length > 0) {
+        await this.redisClient.hset(this.PIXEL_GRID_KEY, pixelMap);
+      }
       await this.redisClient.expire(this.PIXEL_GRID_KEY, 36000); // 1 hour
     }
   }
@@ -219,7 +221,9 @@ export class PixelsService {
       );
     });
 
-    await this.redisClient.hset(this.PIXEL_GRID_KEY, pixelMap);
+    if (Object.keys(pixelMap).length > 0) {
+      await this.redisClient.hset(this.PIXEL_GRID_KEY, pixelMap);
+    }
     await this.redisClient.expire(this.PIXEL_GRID_KEY, 3600);
   }
 
