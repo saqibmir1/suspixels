@@ -561,7 +561,7 @@ class PixelCanvas {
     }
 
     async deletePixelFromServer(x, y) {
-        const response = await fetch('http://localhost:/3002/api/pixels', {
+        const response = await fetch('http://localhost:3002/api/pixels', {
             method: 'DELETE',
             headers: {
                 'Content-Type': 'application/json',
@@ -691,7 +691,7 @@ class PixelCanvas {
             console.log('WebSocket disconnected');
             this.connected = false;
             this.updateConnectionStatus();
-            setTimeout(() => this.connectWebSocket(), 3002);
+            setTimeout(() => this.connectWebSocket(), 3000);
         };
 
         this.ws.onerror = (error) => {
