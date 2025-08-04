@@ -35,8 +35,12 @@ export class PixelsService {
     private readonly configService: ConfigService,
   ) {
     this.redisClient = new Redis({
-      host: this.configService.get<string>('REDIS_HOST'),
-      port: this.configService.get<number>('REDIS_PORT'),
+      host: this.configService.get<string>('redis.host') || 'localhost',
+      port: this.configService.get<number>('redis.port') || 6379,
+      maxRetriesPerRequest: 3,
+      connectTimeout: 10000,
+      commandTimeout: 5000,
+      lazyConnect: true,
     });
   }
 
@@ -146,14 +150,12 @@ export class PixelsService {
       .returning(['x', 'y'])
       .execute();
 
-    if (result.affected === 0) {
-      throw new Error('Pixel not found');
-    }
-
-    const deletedPixel = result.raw[0];
+    // Even if no pixel was found in database, we still broadcast the delete
+    // to ensure all clients are in sync (in case pixel only existed in cache)
     this.websocketGateway.broadcastPixelDelete(x, y);
 
-    return deletedPixel;
+    // Return the coordinates regardless of whether pixel existed
+    return { x, y };
   }
 
   @Cron(CronExpression.EVERY_30_SECONDS)

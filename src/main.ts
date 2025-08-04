@@ -38,6 +38,6 @@ async function bootstrap() {
   await app.listen(configService.get<string>('app.port') as string);
 }
 bootstrap().catch((err) => {
-  console.error('Failed ot start application:', err);
+  console.error('Failed to start application:', err);
   process.exit(1);
 });
